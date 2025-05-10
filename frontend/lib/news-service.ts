@@ -142,14 +142,19 @@ async function updateNewsCache() {
         console.info(`Attempting to scrape ${name}...`);
         
         // Create a timeout promise for each slower source
-        const timeoutPromise = new Promise<NewsArticle[]>((_, reject) => {
-          // Longer timeout for government sites
-          const timeout = name === 'PIB' || name === 'DD NEWS' ? 15000 : 8000;
+       const timeoutPromise = new Promise<NewsArticle[]>((_, reject) => {
+          // Custom timeouts by source
+          let timeout = 8000; // Default
+          if (name === 'DD NEWS') {
+            timeout = 15000; // 15 seconds for DD News
+          } else if (name === 'PIB') {
+            timeout = 25000; // 25 seconds specifically for PIB
+          }
+          
           setTimeout(() => {
             reject(new Error(`Scraping timeout for ${name}`));
           }, timeout);
         });
-        
         // Race the scraper against the timeout
         const articles = await Promise.race([
           scraper(),
