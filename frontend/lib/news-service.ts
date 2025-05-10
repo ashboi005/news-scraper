@@ -143,9 +143,11 @@ async function updateNewsCache() {
         
         // Create a timeout promise for each slower source
         const timeoutPromise = new Promise<NewsArticle[]>((_, reject) => {
+          // Longer timeout for government sites
+          const timeout = name === 'PIB' || name === 'DD NEWS' ? 15000 : 8000;
           setTimeout(() => {
             reject(new Error(`Scraping timeout for ${name}`));
-          }, 8000); // 8 second timeout for slower sources
+          }, timeout);
         });
         
         // Race the scraper against the timeout
@@ -536,21 +538,7 @@ async function scrapeWION(): Promise<NewsArticle[]> {
             });
         }
         
-        // If still no items, try to get them from the main articles div
-        if (newsItems.length === 0) {
-          const mainContent = $("#main-content, .main-content, #content").first();
-          if (mainContent.length > 0) {
-            // Get all links in the main content area
-            mainContent.find("a").each((_, elem) => {
-              const href = $(elem).attr('href');
-              if (href && $(elem).text().trim().length > 15) {
-                newsItems.push(elem);
-              }
-            });
-          }
-        }
-        
-        // If still nothing, try fetching all links
+        // If still no items, try fetching all links
         if (newsItems.length === 0) {
           $("a").each((_, elem) => {
             const href = $(elem).attr('href');
