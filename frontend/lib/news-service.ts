@@ -132,7 +132,6 @@ async function updateNewsCache() {
       { name: 'REUTERS', scraper: scrapeReuters },
       { name: 'DD NEWS', scraper: scrapeDDNews },
       { name: 'PIB', scraper: scrapePIB },
-      { name: 'PTI', scraper: scrapePTI },
       { name: 'FIRSTPOST', scraper: scrapeFirstpost }
     ];
     
@@ -297,11 +296,10 @@ async function scrapeBBC(): Promise<NewsArticle[]> {
                 break;
               }
             }
-            
-            // For summary - expanded selectors
+              // For summary - expanded selectors
             const summarySelectors = [
               ".gs-c-promo-summary", 
-              "[data-testid='card-text']", 
+              "[data-testid='card-description']", 
               "p", 
               ".nw-c-card__body",
               ".ssrcss-q4by3k-PromoText",
@@ -324,6 +322,24 @@ async function scrapeBBC(): Promise<NewsArticle[]> {
                 link = `https://www.bbc.com${link}`;
               } else {
                 link = `https://www.bbc.com/${link}`;
+              }
+            }
+              // Look for timestamp
+            let timestamp = "";
+            const timeSelectors = [
+              "[data-testid='card-metadata-lastupdated']",
+              ".sc-ac6bc755-1",
+              ".gs-c-timestamp",
+              "time",
+              ".date",
+              ".timestamp"
+            ];
+            
+            for (const selector of timeSelectors) {
+              const timeElem = $(item).find(selector).first();
+              if (timeElem.length > 0) {
+                timestamp = timeElem.text().trim();
+                break;
               }
             }
             
@@ -358,15 +374,13 @@ async function scrapeBBC(): Promise<NewsArticle[]> {
                  articleText.includes("security") || 
                  articleText.includes("military") || 
                  articleText.includes("defence")))) {
-              
-              // Avoid duplicates
-              if (!articles.some(a => a.url === link)) {
-                articles.push({
+                // Avoid duplicates
+              if (!articles.some(a => a.url === link)) {                articles.push({
                   source: "BBC",
                   title,
                   summary,
                   url: link,
-                  timestamp: new Date().toISOString()
+                  timestamp: "" // Don't show timestamp
                 });
               }
             }
@@ -464,15 +478,14 @@ async function scrapeCNN(): Promise<NewsArticle[]> {
         const hasKeyword = NEWS_FILTER_KEYWORDS.some(keyword => 
           articleText.includes(keyword.toLowerCase())
         );
-        
-        // Since CNN India section is already India-focused, we can relax our criteria slightly
+          // Since CNN India section is already India-focused, we can relax our criteria slightly
         if (isIndiaRelated && (hasKeyword || articleText.includes("security") || articleText.includes("military") || articleText.includes("defence"))) {
           articles.push({
             source: "CNN",
             title,
             summary,
             url: link,
-            timestamp: new Date().toISOString()
+            timestamp: "" // Hide timestamp as CNN doesn't show them
           });
         }
       }
@@ -618,11 +631,34 @@ async function scrapeWION(): Promise<NewsArticle[]> {
               summary = summaryElem.text().trim();
               break;
             }
-          }
-          
-          // Make sure link is absolute URL
+          }            // Make sure link is absolute URL
           if (!link.startsWith("http")) {
             link = `https://www.wionews.com${link}`;
+          }
+          
+          // Look for timestamp
+          let timestamp = "";
+          const timeSelectors = [
+            ".article-info time", 
+            ".date", 
+            ".timeago", 
+            ".post-date",
+            ".timestamp",
+            ".publish-time",
+            ".article-date"
+          ];
+          
+          for (const selector of timeSelectors) {
+            const timeElem = $(item).find(selector).first();
+            if (timeElem.length > 0) {
+              // Try to get the datetime attribute first
+              if (timeElem.attr('datetime')) {
+                timestamp = timeElem.attr('datetime') || "";
+              } else {
+                timestamp = timeElem.text().trim();
+              }
+              break;
+            }
           }
           
           // Check if article contains India or filter keywords
@@ -646,14 +682,12 @@ async function scrapeWION(): Promise<NewsArticle[]> {
                articleText.includes("security") || 
                articleText.includes("military") || 
                articleText.includes("defence")))) {
-            
-            if (!articles.some(a => a.url === link)) {
-              articles.push({
+              if (!articles.some(a => a.url === link)) {              articles.push({
                 source: "WION",
                 title,
                 summary,
                 url: link,
-                timestamp: new Date().toISOString()
+                timestamp: "" // Don't show timestamp
               });
             }
           }
@@ -805,6 +839,29 @@ async function scrapeReuters(): Promise<NewsArticle[]> {
               break;
             }
           }
+            // Look for timestamp
+          let timestamp = "";
+          const timeSelectors = [
+            "time[datetime]",
+            "time",
+            ".text__text__1FZLe.text__inherit-color__3208F",
+            "time.text__text__1FZLe",
+            ".date-line", 
+            ".timestamp"
+          ];
+          
+          for (const selector of timeSelectors) {
+            const timeElem = $(item).find(selector).first();
+            if (timeElem.length > 0) {
+              // Try to get the datetime attribute first
+              if (timeElem.attr('datetime')) {
+                timestamp = timeElem.attr('datetime') || "";
+              } else {
+                timestamp = timeElem.text().trim();
+              }
+              break;
+            }
+          }
           
           // Make sure link is absolute URL
           if (!link.startsWith("http")) {
@@ -838,13 +895,12 @@ async function scrapeReuters(): Promise<NewsArticle[]> {
                 articleText.includes("security") || articleText.includes("defense")))) {
             
             // Avoid duplicates
-            if (!articles.some(a => a.url === link)) {
-              articles.push({
+            if (!articles.some(a => a.url === link)) {              articles.push({
                 source: "REUTERS",
                 title,
                 summary,
                 url: link,
-                timestamp: new Date().toISOString()
+                timestamp: "" // Don't show timestamp
               });
             }
           }
@@ -944,7 +1000,7 @@ async function scrapeDDNews(): Promise<NewsArticle[]> {
               title = $(item).text().trim();
             } else {
               // Try different selectors for title
-              const titleSelectors = ["h5", "h3", "h4", ".card-title", ".field-content a", ".title", ".headline"];
+              const titleSelectors = ["h2.entry-title a", "h2.entry-title", "h5", "h3", "h4", ".card-title", ".field-content a", ".title", ".headline"];
               for (const selector of titleSelectors) {
                 const titleElem = $(item).find(selector).first();
                 if (titleElem.length > 0) {
@@ -964,11 +1020,22 @@ async function scrapeDDNews(): Promise<NewsArticle[]> {
             
             // Get summary if available
             let summary = "";
-            const summarySelectors = ["p", ".card-text", ".field-content", ".summary", ".description"];
+            const summarySelectors = ["p.blogDisc", "p.excerpt", "p", ".card-text", ".field-content", ".summary", ".description"];
             for (const selector of summarySelectors) {
               const summaryElem = $(item).find(selector).first();
               if (summaryElem.length > 0 && summaryElem.text() !== title) {
                 summary = summaryElem.text().trim();
+                break;
+              }
+            }
+            
+            // Look for timestamp
+            let timestamp = "";
+            const timeSelectors = ["p.mb-0.colorPrimary", "p.date", "p.published", ".date", ".post-date", ".timestamp"];
+            for (const selector of timeSelectors) {
+              const timeElem = $(item).find(selector).first();
+              if (timeElem.length > 0) {
+                timestamp = timeElem.text().trim();
                 break;
               }
             }
@@ -1000,7 +1067,7 @@ async function scrapeDDNews(): Promise<NewsArticle[]> {
                   title,
                   summary,
                   url: link,
-                  timestamp: new Date().toISOString()
+                  timestamp: timestamp || new Date().toISOString()
                 });
               }
             }
@@ -1081,8 +1148,7 @@ async function scrapePIB(): Promise<NewsArticle[]> {
         }
         
         // Process all articles
-        for (const item of newsItems) {
-          // Try different selectors for the news elements
+        for (const item of newsItems) {          // Try different selectors for the news elements
           const linkItems = $(item).find("a, .item, li a, a[href*='PressRelease']");
           
           for (let i = 0; i < linkItems.length; i++) {
@@ -1094,6 +1160,51 @@ async function scrapePIB(): Promise<NewsArticle[]> {
               
               // Skip empty titles, menu links, or non-press release links
               if (!title || title.length < 10) continue;
+                // Look for timestamp
+              let timestamp = "";
+              // First try to find a timestamp near the link
+              const linkParent = linkElem.parent();
+              const timeSelectors = [
+                ".publishdatesmall",
+                "span.publishdatesmall",
+                ".release-date", 
+                ".date", 
+                ".dateRelease", 
+                "small",
+                ".pDate",
+                ".DateTime",
+                ":contains('Date:')",
+                ".releaseTime",
+                ".timestamp"
+              ];
+              
+              for (const selector of timeSelectors) {
+                let timeElem = linkParent.find(selector).first();
+                // Also look in siblings
+                if (timeElem.length === 0) {
+                  timeElem = linkElem.siblings(selector).first();
+                }
+                // Also check for next element
+                if (timeElem.length === 0) {
+                  timeElem = linkElem.next(selector).first();
+                }
+                // Also look in surrounding elements
+                if (timeElem.length === 0) {
+                  timeElem = linkParent.siblings().find(selector).first();
+                }
+                // Also check parent's siblings
+                if (timeElem.length === 0) {
+                  timeElem = linkParent.parent().siblings().find(selector).first();
+                }
+                
+                if (timeElem.length > 0) {
+                  timestamp = timeElem.text().trim();
+                  // Clean up timestamp (PIB often includes "Date:" prefix)
+                  timestamp = timestamp.replace(/^Date\s*:/i, "").trim();
+                  timestamp = timestamp.replace(/^Posted on:\s*/i, "").trim();
+                  break;
+                }
+              }
               
               // Make sure link is absolute URL
               if (!link.startsWith("http")) {
@@ -1111,13 +1222,12 @@ async function scrapePIB(): Promise<NewsArticle[]> {
                   articleText.includes("ministry of defence") || 
                   NEWS_FILTER_KEYWORDS.some(keyword => articleText.includes(keyword.toLowerCase()))) {
                 // Check for duplicates
-                if (!articles.some(a => a.url === link)) {
-                  articles.push({
+                if (!articles.some(a => a.url === link)) {                  articles.push({
                     source: "PIB",
                     title,
                     summary: "", // PIB doesn't typically show summaries on the main page
                     url: link,
-                    timestamp: new Date().toISOString()
+                    timestamp: "" // Don't show timestamp
                   });
                 }
               }
@@ -1134,216 +1244,6 @@ async function scrapePIB(): Promise<NewsArticle[]> {
     return articles;
   } catch (error) {
     console.error(`Error scraping PIB:`, error);
-    return [];
-  }
-}
-
-/**
- * Scrape latest news from PTI (Press Trust of India) website
- */
-async function scrapePTI(): Promise<NewsArticle[]> {
-  try {
-    const headers = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9"
-    };
-    
-    // PTI doesn't have a dedicated website, so we'll scrape from their content on partner sites
-    // Multiple sources and specific URLs for defense news
-    const urlsToTry = [
-      { url: "https://www.thehindu.com/news/national/", site: "The Hindu" },
-      { url: "https://www.thehindu.com/news/national/defence/", site: "The Hindu Defense" },
-      { url: "https://www.outlookindia.com/national", site: "Outlook India" },
-      { url: "https://www.outlookindia.com/topic/defence", site: "Outlook Defense" },
-      { url: "https://www.ndtv.com/india", site: "NDTV" },
-      { url: "https://www.ndtv.com/topic/defence", site: "NDTV Defense" },
-      { url: "https://www.ptinews.com/national-news", site: "PTI Official" },
-      { url: "https://www.ptinews.com/defence", site: "PTI Defence" },
-      { url: "https://timesofindia.indiatimes.com/india", site: "Times of India" },
-      { url: "https://economictimes.indiatimes.com/news/defence", site: "ET Defense" }
-    ];
-    
-    const articles: NewsArticle[] = [];
-    
-    for (const urlInfo of urlsToTry) {
-      const url = urlInfo.url;
-      const siteName = urlInfo.site;
-      
-      try {
-        console.info(`Trying to fetch PTI from ${siteName} (${url})`);
-        
-        const response = await axios.get(url, { 
-          headers, 
-          timeout: 8000,
-          maxRedirects: 5
-        });
-        
-        const html = response.data;
-        const $ = cheerio.load(html);
-        
-        // Different selectors by site
-        const newsItems: any[] = [];
-        
-        if (siteName.includes("The Hindu")) {
-          $("div.story-card, .element.article-listing, .other-article, .archive-list li").each((_, elem) => {
-            newsItems.push(elem);
-            return true;
-          });
-        } else if (siteName.includes("Outlook")) {
-          $("article.story-card, .news-story, .catPost-card, .photo_list_wrap, .listnews").each(function(_, elem) {
-            newsItems.push(elem);
-            return true;
-          });
-        } else if (siteName.includes("NDTV")) {
-          $(".news_Itm, .lisingNews, .ins_storylist li, .featured_cont, .new_storylising li").each(function(_, elem) {
-            newsItems.push(elem);
-            return true;
-          });
-        } else if (siteName.includes("PTI")) {
-          $(".container .col-md-8 .row.news-padd, .news-list article, .news-block, .newsListDiv .stry_lst, .newsListDiv .li").each(function(_, elem) {
-            newsItems.push(elem);
-            return true;
-          });
-        } else if (siteName.includes("Times of India") || siteName.includes("ET")) {
-          $(".top-newslist li, .news-list li, .article-list .news_block, .dataList li, .story_list li").each(function(_, elem) {
-            newsItems.push(elem);
-            return true;
-          });
-        }
-        
-        // If site-specific selectors found anything, try some generic selectors
-        if (newsItems.length === 0) {
-          $("article, .story, .news-item, .article, div[class*='news'], div[class*='story']").each(function(_, elem) {
-            newsItems.push(elem);
-            return true;
-          });
-        }
-        
-        console.info(`Found ${newsItems.length} potential news items on ${siteName}`);
-        
-        for (const item of newsItems) {
-          let title: string | null = null;
-          let link: string | null = null;
-          let summary: string = "";
-          let isPtiStory: boolean = false;
-          
-          // If the item itself is a link
-          if (item.name === 'a') {
-            link = $(item).attr('href') || '';
-            title = $(item).text().trim();
-          } else {
-            // Title selectors
-            let titleSelectors = ["h3 a", "h2 a", ".title a", "a h3", "a h2", ".news_Itm-hd a", ".card-title a", ".lns_title", ".heading a", ".headline a"];
-            if (siteName.includes("PTI")) {
-              titleSelectors = ["h5 a", ".headline a", ".article-title a", ".stry_head a", ".stry_head_txt"];
-            }
-            
-            // Find title and link
-            for (const selector of titleSelectors) {
-              const titleElem = $(item).find(selector).first();
-              if (titleElem.length > 0) {
-                title = titleElem.text().trim();
-                link = titleElem.attr('href') || '';
-                break;
-              }
-            }
-            
-            // If title or link not found with specific selectors, try a generic 'a'
-            if (!title || !link) {
-              const linkElem = $(item).find("a").first();
-              if (linkElem.length > 0 && linkElem.attr('href')) {
-                link = linkElem.attr('href') || '';
-                // If no title, use link text as title
-                if (!title) {
-                  title = linkElem.text().trim();
-                }
-              }
-            }
-          }
-          
-          if (!title || !link) continue;
-          
-          // Make link absolute
-          if (siteName.includes("The Hindu") && !link.startsWith("http")) {
-            link = `https://www.thehindu.com${link}`;
-          } else if (siteName.includes("Outlook") && !link.startsWith("http")) {
-            link = `https://www.outlookindia.com${link}`;
-          } else if (siteName.includes("NDTV") && !link.startsWith("http")) {
-            link = `https://www.ndtv.com${link}`;
-          } else if (siteName.includes("PTI") && !link.startsWith("http")) {
-            link = `https://www.ptinews.com${link}`;
-          } else if (siteName.includes("Times of India") && !link.startsWith("http")) {
-            link = `https://timesofindia.indiatimes.com${link}`;
-          } else if (siteName.includes("ET") && !link.startsWith("http")) {
-            link = `https://economictimes.indiatimes.com${link}`;
-          }
-          
-          // Check for PTI attribution or if it's from PTI's own site
-          const textContent = $(item).text().toLowerCase();
-          if (textContent.includes("pti") || 
-              textContent.includes("press trust of india") || 
-              siteName.includes("PTI")) {
-            isPtiStory = true;
-          }
-          
-          // Get summary
-          let summarySelectors = [".story-card-summary", ".card-text", ".news_Itm-cont", "p", ".synopsis", ".desc", ".summary"];
-          if (siteName.includes("PTI")) {
-            summarySelectors = [".news-content-p", ".excerpt", ".summary", ".stry_desc"];
-          }
-          
-          for (const selector of summarySelectors) {
-            const summaryElem = $(item).find(selector).first();
-            if (summaryElem.length > 0 && summaryElem.text().trim() !== title) {
-              summary = summaryElem.text().trim();
-              break;
-            }
-          }
-          
-          const articleTextContent = `${title} ${summary}`.toLowerCase();
-          
-          // Check for relevance
-          const isIndiaRelated = 
-            articleTextContent.includes("india") || 
-            articleTextContent.includes("delhi") || 
-            articleTextContent.includes("indian") || 
-            articleTextContent.includes("modi");
-            
-          const hasKeyword = NEWS_FILTER_KEYWORDS.some(keyword => 
-            articleTextContent.includes(keyword.toLowerCase())
-          );
-          
-          // More relaxed filtering:
-          // 1. If it's a defense-specific page and a PTI story, include it
-          // 2. If it's a PTI story that mentions India and defense keywords, include it
-          if ((url.toLowerCase().includes("defence") && isPtiStory) ||
-              (isPtiStory && (isIndiaRelated && (hasKeyword || 
-               articleTextContent.includes("security") || 
-               articleTextContent.includes("military") || 
-               articleTextContent.includes("defence"))))) {
-            
-            if (!articles.some(a => a.url === link)) {
-              articles.push({
-                source: "PTI",
-                title,
-                summary,
-                url: link,
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(`Error fetching PTI from ${siteName} (${url}):`, error);
-        continue;
-      }
-    }
-    
-    console.info(`PTI: Scraped ${articles.length} filtered articles from various sources`);
-    return articles;
-  } catch (error) {
-    console.error(`Error scraping PTI:`, error);
     return [];
   }
 }
@@ -1381,7 +1281,7 @@ async function scrapeFirstpost(): Promise<NewsArticle[]> {
         
         const response = await axios.get(url, { 
           headers, 
-          timeout: 8000, // Reduced from 20000
+          timeout: 15000, // Reduced from 20000
           maxRedirects: 5
         });
         
@@ -1458,11 +1358,37 @@ async function scrapeFirstpost(): Promise<NewsArticle[]> {
           }
           
           if (!title || !link) continue;
-          
-          // Summary selectors
+            // Summary selectors
           const summaryElem = $(item).find("p, .summary, .excerpt, .description, .teaser, .article-excerpt, .list-view-items-summary, .card-text").first();
           if (summaryElem.length > 0 && summaryElem.text().trim() !== title) {
             summary = summaryElem.text().trim();
+          }
+          
+          // Look for timestamp
+          let timestamp = "";
+          const timeSelectors = [
+            ".article-date", 
+            ".timestamp", 
+            ".date", 
+            ".time",
+            "time",
+            ".post-date",
+            ".post-time",
+            ".article-info time",
+            ".publish-date"
+          ];
+          
+          for (const selector of timeSelectors) {
+            const timeElem = $(item).find(selector).first();
+            if (timeElem.length > 0) {
+              // Try to get datetime attribute first
+              if (timeElem.attr('datetime')) {
+                timestamp = timeElem.attr('datetime') || "";
+              } else {
+                timestamp = timeElem.text().trim();
+              }
+              break;
+            }
           }
           
           // Make URL absolute if it's relative
@@ -1491,25 +1417,23 @@ async function scrapeFirstpost(): Promise<NewsArticle[]> {
               (isIndiaRelated && (hasKeyword || 
                articleText.includes("security") || 
                articleText.includes("military") || 
-               articleText.includes("defence")))) {
-            
-            if (!articles.some(a => a.url === link)) { // Avoid duplicates
-              articles.push({
-                source: "FIRSTPOST",
-                title,
-                summary,
-                url: link,
-                timestamp: new Date().toISOString()
-              });
+               articleText.includes("defence")))) {              if (!articles.some(a => a.url === link)) { // Avoid duplicates
+                articles.push({
+                  source: "FIRSTPOST",
+                  title,
+                  summary,
+                  url: link,
+                  timestamp: "" // Don't show timestamp
+                });
+              }
             }
           }
         }
-      } catch (error) {
+      catch (error) {
         console.warn(`Error fetching Firstpost URL ${url}:`, error);
         continue;
       }
-    }
-    
+    }   
     console.info(`Firstpost: Scraped ${articles.length} filtered articles`);
     return articles;
   } catch (error) {

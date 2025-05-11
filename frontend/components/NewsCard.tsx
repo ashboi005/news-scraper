@@ -6,17 +6,15 @@ interface NewsCardProps {
 }
 
 const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
-  // Format the timestamp for display
-  const formattedDate = new Date(article.timestamp).toLocaleString();
-  
+  // Format the timestamp for display, handle empty strings
+  const formattedDate = article.timestamp ? new Date(article.timestamp).toLocaleString() : "";
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+        <div className="flex items-center justify-between mb-2">          <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
             {article.source}
           </span>
-          <span className="text-xs text-gray-500">{formattedDate}</span>
+          {formattedDate && <span className="text-xs text-gray-500">{formattedDate}</span>}
         </div>
           <h2 className="text-lg text-gray-800 font-semibold mb-2 line-clamp-2">{article.title}</h2>
         

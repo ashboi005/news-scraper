@@ -11,7 +11,6 @@ export async function GET() {
       { id: 'reuters', name: 'Reuters' },
       { id: 'dd news', name: 'DD News' },
       { id: 'pib', name: 'PIB' },
-      { id: 'pti', name: 'PTI' },
       { id: 'firstpost', name: 'Firstpost' },
       { id: 'wion', name: 'WION' }
     ]

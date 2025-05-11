@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "News Aggregator",
+  title: "War News | Hesh Media",
   description: "Latest news from multiple trusted sources",
 };
 

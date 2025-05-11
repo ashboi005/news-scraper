@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchNews, fetchSources, NewsArticle, NewsSource } from '@/lib/api';
 import NewsGrid from '@/components/NewsGrid';
 import SourceSelector from '@/components/SourceSelector';
+import { Loader, Loader2, RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -90,7 +91,7 @@ export default function Home() {
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             disabled={isLoading}
           >
-            {isLoading ? 'Refreshing...' : 'Refresh'}
+            {isLoading ? <Loader2 className="w-4 h-4 inline-block mr-1" /> : <RefreshCw className="w-4 h-4 inline-block mr-1" />}
           </button>
         </div>
         
@@ -106,10 +107,10 @@ export default function Home() {
       <footer className="bg-white border-t mt-12 py-6">
         <div className="container mx-auto px-4">
           <p className="text-center text-gray-500">
-            © {new Date().getFullYear()} 
+            © {new Date().getFullYear()} Hesh Media. All rights reserved.
           </p>
           <p className="text-center text-gray-500">
-            Website built with ❤️ by <span className="font-bold text-blue-500 underline"><a href="https://www.github.com/ashboi005">Ashwath</a></span>
+            Website built with ❤️ by <span className="font-bold text-blue-500 underline"><a href="https://www.github.com/ashboi005">Ashwath</a></span> | Powered by <span className="font-bold text-blue-500 underline"><a href="https://www.heshmedia.in">Hesh Media</a></span>
           </p>
            <p className="text-center text-gray-500">
             Jai Hind! 🇮🇳
