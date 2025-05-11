@@ -1283,7 +1283,7 @@ async function scrapeFirstpost(): Promise<NewsArticle[]> {
         
         const response = await axios.get(url, {
           headers,
-          timeout: 50000,, 
+          timeout: 50000,
           maxRedirects: 5
         });
         
