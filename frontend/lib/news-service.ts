@@ -47,12 +47,22 @@ export async function getCachedNews(source?: string) {
         lastUpdated: lastUpdate
       };
     } else {
-      // Return all news
-      let allNews: NewsArticle[] = [];
-      for (const sourceNews of Object.values(newsCache)) {
-        allNews = allNews.concat(sourceNews);
+      // Return news in alternating pattern by source
+      const availableSources = Object.keys(newsCache).filter(src => newsCache[src].length > 0);
+      const maxArticlesPerSource = Math.max(...availableSources.map(src => newsCache[src].length));
+      
+      let alternatingNews: NewsArticle[] = [];
+      
+      // Interleave articles from different sources
+      for (let i = 0; i < maxArticlesPerSource; i++) {
+        for (const sourceName of availableSources) {
+          if (newsCache[sourceName][i]) {
+            alternatingNews.push(newsCache[sourceName][i]);
+          }
+        }
       }
-      return { data: allNews, lastUpdated: lastUpdate };
+      
+      return { data: alternatingNews, lastUpdated: lastUpdate };
     }
   }
 
@@ -71,11 +81,22 @@ export async function getCachedNews(source?: string) {
         lastUpdated: lastUpdate
       };
     } else {
-      let allNews: NewsArticle[] = [];
-      for (const sourceNews of Object.values(newsCache)) {
-        allNews = allNews.concat(sourceNews);
+      // Return news in alternating pattern by source
+      const availableSources = Object.keys(newsCache).filter(src => newsCache[src].length > 0);
+      const maxArticlesPerSource = Math.max(...availableSources.map(src => newsCache[src].length));
+      
+      let alternatingNews: NewsArticle[] = [];
+      
+      // Interleave articles from different sources
+      for (let i = 0; i < maxArticlesPerSource; i++) {
+        for (const sourceName of availableSources) {
+          if (newsCache[sourceName][i]) {
+            alternatingNews.push(newsCache[sourceName][i]);
+          }
+        }
       }
-      return { data: allNews, lastUpdated: lastUpdate };
+      
+      return { data: alternatingNews, lastUpdated: lastUpdate };
     }
   });
 
@@ -85,18 +106,31 @@ export async function getCachedNews(source?: string) {
   } catch (error) {
     console.warn('Using fallback news data due to timeout', error);
     
-    // Use fallback data
+    // Use fallback data with the same alternating pattern
     if (source) {
       return {
         data: FALLBACK_NEWS[source.toUpperCase()] || [],
         lastUpdated: new Date()
       };
     } else {
-      let allNews: NewsArticle[] = [];
-      for (const sourceNews of Object.values(FALLBACK_NEWS)) {
-        allNews = allNews.concat(sourceNews);
+      // Apply the same alternating logic to fallback data
+      const availableSources = Object.keys(FALLBACK_NEWS).filter(src => 
+        FALLBACK_NEWS[src] && FALLBACK_NEWS[src].length > 0
+      );
+      const maxArticlesPerSource = Math.max(...availableSources.map(src => FALLBACK_NEWS[src].length));
+      
+      let alternatingNews: NewsArticle[] = [];
+      
+      // Interleave articles from different sources
+      for (let i = 0; i < maxArticlesPerSource; i++) {
+        for (const sourceName of availableSources) {
+          if (FALLBACK_NEWS[sourceName] && FALLBACK_NEWS[sourceName][i]) {
+            alternatingNews.push(FALLBACK_NEWS[sourceName][i]);
+          }
+        }
       }
-      return { data: allNews, lastUpdated: new Date() };
+      
+      return { data: alternatingNews, lastUpdated: new Date() };
     }
   }
 }
