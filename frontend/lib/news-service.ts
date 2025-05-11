@@ -147,7 +147,9 @@ async function updateNewsCache() {
           if (name === 'DD NEWS') {
             timeout = 15000; // 15 seconds for DD News
           } else if (name === 'PIB') {
-            timeout = 25000; // 25 seconds specifically for PIB
+            timeout = 50000; // 50 seconds specifically for PIB
+          } else if (name === 'FIRSTPOST') {
+            timeout = 50000; // 20 seconds for Firstpost
           }
           
           setTimeout(() => {
@@ -1279,9 +1281,9 @@ async function scrapeFirstpost(): Promise<NewsArticle[]> {
       try {
         console.info(`Trying to fetch Firstpost URL: ${url}`);
         
-        const response = await axios.get(url, { 
-          headers, 
-          timeout: 15000, // Reduced from 20000
+        const response = await axios.get(url, {
+          headers,
+          timeout: 50000,, 
           maxRedirects: 5
         });
         
